@@ -2,6 +2,7 @@ package com.apptreesoftware.barcodescan
 
 import android.app.Activity
 import android.content.Intent
+import io.flutter.plugin.common.EventChannel
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
@@ -13,9 +14,21 @@ class BarcodeScanPlugin(val activity: Activity): MethodCallHandler,
     PluginRegistry.ActivityResultListener {
   var result : Result? = null
   companion object {
+    var EVENT_SINK: EventChannel.EventSink? = null
+
     @JvmStatic
     fun registerWith(registrar: Registrar): Unit {
       val channel = MethodChannel(registrar.messenger(), "com.apptreesoftware.barcode_scan")
+      val eventChannel = EventChannel(registrar.messenger(), "com.apptreesoftware.barcode_scan/event")
+      eventChannel.setStreamHandler(object: EventChannel.StreamHandler {
+        override fun onListen(p0: Any?, sink: EventChannel.EventSink?) {
+          EVENT_SINK = sink
+        }
+
+        override fun onCancel(p0: Any?) {
+        }
+      })
+
       val plugin = BarcodeScanPlugin(registrar.activity())
       channel.setMethodCallHandler(plugin)
       registrar.addActivityResultListener(plugin)

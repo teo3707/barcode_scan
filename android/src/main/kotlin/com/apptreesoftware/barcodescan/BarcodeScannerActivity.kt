@@ -25,6 +25,7 @@ class BarcodeScannerActivity : Activity(), ZXingScannerView.ResultHandler {
         const val IMAGE_CHOOSER = 300
 
         const val REQUEST_IMAGE = 1000
+        const val REQUEST_STORAGE_PERMISSION = 2000
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,6 +67,13 @@ class BarcodeScannerActivity : Activity(), ZXingScannerView.ResultHandler {
 
             }
             item.itemId == IMAGE_CHOOSER -> {
+                val array = arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+                    || ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this, array,
+                            REQUEST_STORAGE_PERMISSION)
+                    return true
+                }
                 val intent = Intent(Intent.ACTION_GET_CONTENT)
                 intent.addCategory(Intent.CATEGORY_OPENABLE)
                 intent.type = "image/*"
@@ -141,6 +149,16 @@ class BarcodeScannerActivity : Activity(), ZXingScannerView.ResultHandler {
                     scannerView.startCamera()
                 } else {
                     finishWithError("PERMISSION_NOT_GRANTED")
+                }
+            }
+            REQUEST_STORAGE_PERMISSION -> {
+                if (PermissionUtil.verifyPermissions(grantResults)) {
+                    val intent = Intent(Intent.ACTION_GET_CONTENT)
+                    intent.addCategory(Intent.CATEGORY_OPENABLE)
+                    intent.type = "image/*"
+                    startActivityForResult(intent, REQUEST_IMAGE)
+                } else {
+                    BarcodeScanPlugin.EVENT_SINK?.success("ANDROID_STORAGE_PERMISSION_NOT_GRANTED")
                 }
             }
             else -> {
