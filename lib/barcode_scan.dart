@@ -12,7 +12,7 @@ class BarcodeScanner {
     if (storageDenied != null && storageDenied.isNotEmpty) {
       params['storageDenied'] = storageDenied;
     }
-    var res = await _channel.invokeMethod('scan', params);
+    String res = await _channel.invokeMethod('scan', params);
     return res;
   }
 }
