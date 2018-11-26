@@ -6,8 +6,7 @@ class BarcodeScanner {
   static const CameraAccessDenied = 'PERMISSION_NOT_GRANTED';
   static const AndroidStorageDenied = 'ANDROID_STORAGE_PERMISSION_NOT_GRANTED';
   static EventChannel _eventChannel;
-  static const MethodChannel _channel =
-      const MethodChannel('com.apptreesoftware.barcode_scan');
+  static const MethodChannel _channel = const MethodChannel('com.apptreesoftware.barcode_scan');
   static List<Function> _storageDenied = [];
 
   static addPermissionDeniedHandler(Function fn) {
