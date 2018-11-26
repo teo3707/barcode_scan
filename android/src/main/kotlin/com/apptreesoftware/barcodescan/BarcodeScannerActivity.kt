@@ -74,6 +74,7 @@ class BarcodeScannerActivity : Activity(), ZXingScannerView.ResultHandler {
                             REQUEST_STORAGE_PERMISSION)
                     return true
                 }
+                scannerView.stopCamera()
                 val intent = Intent(Intent.ACTION_GET_CONTENT)
                 intent.addCategory(Intent.CATEGORY_OPENABLE)
                 intent.type = "image/*"
@@ -96,7 +97,10 @@ class BarcodeScannerActivity : Activity(), ZXingScannerView.ResultHandler {
             if (requestCode == REQUEST_IMAGE) {
                 val path = FileUtils().getPathFromUri(this, data?.data)
                 val result = FileUtils.analyzeBitmap(path)
-                result ?: return
+                if (result == null) {
+                    scannerView.startCamera()
+                    return;
+                }
                 handleResult(result)
             }
         }
@@ -153,11 +157,13 @@ class BarcodeScannerActivity : Activity(), ZXingScannerView.ResultHandler {
             }
             REQUEST_STORAGE_PERMISSION -> {
                 if (PermissionUtil.verifyPermissions(grantResults)) {
+                    scannerView.stopCamera();
                     val intent = Intent(Intent.ACTION_GET_CONTENT)
                     intent.addCategory(Intent.CATEGORY_OPENABLE)
                     intent.type = "image/*"
                     startActivityForResult(intent, REQUEST_IMAGE)
                 } else {
+                    scannerView.startCamera()
                     BarcodeScanPlugin.EVENT_SINK?.success("ANDROID_STORAGE_PERMISSION_NOT_GRANTED")
                 }
             }

@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 class BarcodeScanner {
   static const CameraAccessDenied = 'PERMISSION_NOT_GRANTED';
   static const AndroidStorageDenied = 'ANDROID_STORAGE_PERMISSION_NOT_GRANTED';
-  static const EventChannel _eventChannel;
+  static EventChannel _eventChannel;
   static const MethodChannel _channel =
       const MethodChannel('com.apptreesoftware.barcode_scan');
   static const List<Function> _storageDenied = [];
