@@ -20,7 +20,7 @@ class BarcodeScanner {
   static Future<String> scan() async {
     if (Platform.isAndroid) {
       if (_eventChannel == null) {
-        _eventChannel = const EventChannel("com.apptreesoftware.barcode_scan/event")
+        _eventChannel = EventChannel("com.apptreesoftware.barcode_scan/event")
       }
       _eventChannel.receiveBroadcastStream().listen((v) {
         if (v == AndroidStorageDenied) {
