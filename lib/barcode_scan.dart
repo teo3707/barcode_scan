@@ -8,7 +8,7 @@ class BarcodeScanner {
   static EventChannel _eventChannel;
   static const MethodChannel _channel =
       const MethodChannel('com.apptreesoftware.barcode_scan');
-  static const List<Function> _storageDenied = [];
+  static List<Function> _storageDenied = [];
 
   static addPermissionDeniedHandler(Function fn) {
     _storageDenied.add(fn);
