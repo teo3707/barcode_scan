@@ -7,11 +7,12 @@ class BarcodeScanner {
   static const MethodChannel _channel =
   const MethodChannel('com.apptreesoftware.barcode_scan');
 
-  static Future<String> scan({ String storageDenied}) {
+  static Future<String> scan({ String storageDenied}) async {
     Map params = {};
     if (storageDenied != null && storageDenied.isNotEmpty) {
       params['storageDenied'] = storageDenied;
     }
-    return _channel.invokeMethod('scan', params);
+    var res = await _channel.invokeMethod('scan', params);
+    return res;
   }
 }
