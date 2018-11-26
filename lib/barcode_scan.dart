@@ -4,31 +4,14 @@ import 'package:flutter/services.dart';
 
 class BarcodeScanner {
   static const CameraAccessDenied = 'PERMISSION_NOT_GRANTED';
-  static const AndroidStorageDenied = 'ANDROID_STORAGE_PERMISSION_NOT_GRANTED';
-  static EventChannel _eventChannel;
-  static const MethodChannel _channel = const MethodChannel('com.apptreesoftware.barcode_scan');
-  static List<Function> _storageDenied = [];
+  static const MethodChannel _channel =
+  const MethodChannel('com.apptreesoftware.barcode_scan');
 
-  static addPermissionDeniedHandler(Function fn) {
-    _storageDenied.add(fn);
-  }
-
-  static removePermissionDeniedHandler(Function fn) {
-    _storageDenied.remove(fn);
-  }
-
-  static Future<String> scan() async {
-    if (Platform.isAndroid) {
-      if (_eventChannel == null) {
-        _eventChannel = EventChannel("com.apptreesoftware.barcode_scan/event")
-      }
-      _eventChannel.receiveBroadcastStream().listen((v) {
-        if (v == AndroidStorageDenied) {
-          _storageDenied.forEach((fn) => fn(v));
-        }
-      });
+  static Future<String> scan({ String storageDenied}) {
+    Map params = {};
+    if (storageDenied != null && storageDenied.isNotEmpty) {
+      params['storageDenied'] = storageDenied;
     }
-    var res = await _channel.invokeMethod('scan');
-    return res;
+    return _channel.invokeMethod('scan', params);
   }
 }

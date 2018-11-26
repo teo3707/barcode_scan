@@ -9,6 +9,7 @@ import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast
 import com.google.zxing.Result
 import me.dm7.barcodescanner.zxing.ZXingScannerView
 
@@ -98,7 +99,7 @@ class BarcodeScannerActivity : Activity(), ZXingScannerView.ResultHandler {
                 val result = FileUtils.analyzeBitmap(path)
                 if (result == null) {
                     scannerView.startCamera()
-                    return;
+                    return
                 }
                 handleResult(result)
             }
@@ -163,7 +164,7 @@ class BarcodeScannerActivity : Activity(), ZXingScannerView.ResultHandler {
                     startActivityForResult(intent, REQUEST_IMAGE)
                 } else {
                     scannerView.startCamera()
-                    BarcodeScanPlugin.EVENT_SINK?.success("ANDROID_STORAGE_PERMISSION_NOT_GRANTED")
+                    Toast.makeText(this, BarcodeScanPlugin.METHOD_CALL?.argument<String>("storageDenied") ?: "storage permission denied", Toast.LENGTH_SHORT).show()
                 }
             }
             else -> {

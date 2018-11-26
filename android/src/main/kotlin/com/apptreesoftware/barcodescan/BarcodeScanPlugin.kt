@@ -14,21 +14,11 @@ class BarcodeScanPlugin(val activity: Activity): MethodCallHandler,
     PluginRegistry.ActivityResultListener {
   var result : Result? = null
   companion object {
-    var EVENT_SINK: EventChannel.EventSink? = null
+    var METHOD_CALL: MethodCall? = null
 
     @JvmStatic
     fun registerWith(registrar: Registrar): Unit {
       val channel = MethodChannel(registrar.messenger(), "com.apptreesoftware.barcode_scan")
-      val eventChannel = EventChannel(registrar.messenger(), "com.apptreesoftware.barcode_scan/event")
-      eventChannel.setStreamHandler(object: EventChannel.StreamHandler {
-        override fun onListen(p0: Any?, sink: EventChannel.EventSink?) {
-          EVENT_SINK = sink
-        }
-
-        override fun onCancel(p0: Any?) {
-        }
-      })
-
       val plugin = BarcodeScanPlugin(registrar.activity())
       channel.setMethodCallHandler(plugin)
       registrar.addActivityResultListener(plugin)
@@ -36,6 +26,7 @@ class BarcodeScanPlugin(val activity: Activity): MethodCallHandler,
   }
 
   override fun onMethodCall(call: MethodCall, result: Result): Unit {
+    METHOD_CALL = call
     if (call.method.equals("scan")) {
       this.result = result
       showBarcodeView()
