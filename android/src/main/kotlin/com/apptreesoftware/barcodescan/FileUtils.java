@@ -21,6 +21,7 @@ import com.google.zxing.DecodeHintType;
 import com.google.zxing.LuminanceSource;
 import com.google.zxing.MultiFormatReader;
 import com.google.zxing.PlanarYUVLuminanceSource;
+import com.google.zxing.RGBLuminanceSource;
 import com.google.zxing.Result;
 import com.google.zxing.common.HybridBinarizer;
 
@@ -63,64 +64,44 @@ class FileUtils {
 
     public static Result analyzeBitmap(String path) {
 
-        /**
-         * 首先判断图片的大小,若图片过大,则执行图片的裁剪操作,防止OOM
-         */
-        //BitmapFactory.Options options = new BitmapFactory.Options();
-        //options.inJustDecodeBounds = true; // 先获取原大小
-        // Bitmap mBitmap = BitmapFactory.decodeFile(path, options);
-        Bitmap mBitmap = BitmapFactory.decodeFile(path);
-        //options.inJustDecodeBounds = false; // 获取新的大小
-
-//        int sampleSize = (int) (options.outHeight / (float) 400);
-//
-//        if (sampleSize <= 0)
-//            sampleSize = 1;
-        //options.inSampleSize = sampleSize;
-        //mBitmap = BitmapFactory.decodeFile(path, options);
-        int width = mBitmap.getWidth(), height = mBitmap.getHeight();
-        float scaleWidth = 250.0f / width;
-        float scaleHeight = (250.0f / width) / width * height;
-        Matrix matrix = new Matrix();
-        matrix.postScale(scaleWidth, scaleHeight);
-        mBitmap = Bitmap.createBitmap(mBitmap, 0, 0, width, height, matrix, false);
-        MultiFormatReader multiFormatReader = new MultiFormatReader();
-
-        // 解码的参数
-        //Hashtable<DecodeHintType, Object> hints = new Hashtable<DecodeHintType, Object>(2);
-        Map<DecodeHintType, Object> hints = new EnumMap(DecodeHintType.class);
-        // 可以解析的编码类型
-        Vector<BarcodeFormat> decodeFormats = new Vector<BarcodeFormat>(EnumSet.allOf(BarcodeFormat.class));
-
-        hints.put(DecodeHintType.POSSIBLE_FORMATS, ALL_FORMATS);
-        //hints.put(DecodeHintType.PURE_BARCODE, Boolean.TRUE);
-        // 设置继续的字符编码格式为UTF8
-        //hints.put(DecodeHintType.CHARACTER_SET, "UTF8");
-        hints.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
-        //hints.put(DecodeHintType.PURE_BARCODE, Boolean.FALSE);
-        // 设置解析配置参数
-        multiFormatReader.setHints(hints);
-
-        // 开始对图像资源解码
-        Result rawResult = null;
-        BitmapLuminanceSource source = new BitmapLuminanceSource(mBitmap);
-
-        try {
-            rawResult = multiFormatReader.decodeWithState(new BinaryBitmap(new HybridBinarizer(source)));
-        } catch (Throwable e) {
-            e.printStackTrace();
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(path, options);
+        options.inJustDecodeBounds = false;
+        int sampleSize = options.outHeight / 300;
+        if (sampleSize <= 0) {
+            sampleSize = 1;
         }
-
-
-        if (rawResult == null) {
+        MultiFormatReader multiFormatReader = new MultiFormatReader();
+        Map<DecodeHintType, Object> hints = new EnumMap(DecodeHintType.class);
+        hints.put(DecodeHintType.POSSIBLE_FORMATS, ALL_FORMATS);
+        hints.put(DecodeHintType.TRY_HARDER, Boolean.TRUE);
+        multiFormatReader.setHints(hints);
+        Result rawResult;
+        RGBLuminanceSource source;
+        for (int i = sampleSize; i >= 1; i--) {
+            options.inSampleSize = i;
+            Bitmap bitmap = BitmapFactory.decodeFile(path, options);
+            int w = bitmap.getWidth(), h = bitmap.getHeight();
+            int[] pixels = new int[w * h];
+            bitmap.getPixels(pixels, 0, w, 0, 0, w, h);
+            source = new RGBLuminanceSource(w, h, pixels);
             try {
+                rawResult = multiFormatReader.decodeWithState(new BinaryBitmap(new HybridBinarizer(source)));
+                if (rawResult != null) {
+                    System.out.println("[decode qr code result]" + rawResult.toString());
+                    return rawResult;
+                }
                 rawResult = multiFormatReader.decodeWithState(new BinaryBitmap(new HybridBinarizer(source.invert())));
+                if (rawResult != null) {
+                    System.out.println("[decode qr code result]" + rawResult.toString());
+                    return rawResult;
+                }
             } catch (Throwable e) {
-                e.printStackTrace();
+                System.out.println("[decode qr code error]" + e);
             }
         }
-
-        return rawResult;
+        return null;
     }
 
 

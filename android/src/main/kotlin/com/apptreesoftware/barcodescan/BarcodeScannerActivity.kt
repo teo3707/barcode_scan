@@ -5,6 +5,8 @@ import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Message
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.view.Menu
@@ -12,7 +14,26 @@ import android.view.MenuItem
 import android.widget.Toast
 import com.google.zxing.Result
 import me.dm7.barcodescanner.zxing.ZXingScannerView
+import java.lang.ref.WeakReference
 
+
+class QrHandler(activity: BarcodeScannerActivity) : Handler() {
+    private var mActivity: WeakReference<BarcodeScannerActivity>? = null;
+
+    init {
+        mActivity = WeakReference<BarcodeScannerActivity>(activity)
+    }
+
+    override fun handleMessage(msg: Message?) {
+        if (msg?.what == BarcodeScannerActivity.PARSE_QR_OK) {
+            mActivity?.get()?.handleResult(msg.data.getString("qrCode"))
+        } else if (msg?.what == BarcodeScannerActivity.PARSE_QR_NONE) {
+            mActivity?.get()?.scannerView?.startCamera()
+        }
+        BarcodeScannerActivity.HANDLER = null
+        super.handleMessage(msg)
+    }
+}
 
 class BarcodeScannerActivity : Activity(), ZXingScannerView.ResultHandler {
 
@@ -26,6 +47,11 @@ class BarcodeScannerActivity : Activity(), ZXingScannerView.ResultHandler {
 
         const val REQUEST_IMAGE = 1000
         const val REQUEST_STORAGE_PERMISSION = 2000
+
+        const val PARSE_QR_OK = 100
+        const val PARSE_QR_NONE = 200
+
+        var HANDLER: Handler? = null
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,6 +93,9 @@ class BarcodeScannerActivity : Activity(), ZXingScannerView.ResultHandler {
 
             }
             item.itemId == IMAGE_CHOOSER -> {
+                if (HANDLER != null) {
+                    return true
+                }
                 val array = arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
                     || ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -84,24 +113,47 @@ class BarcodeScannerActivity : Activity(), ZXingScannerView.ResultHandler {
             }
             item.itemId == android.R.id.home -> {
                 finish()
-                return true;
+                return true
             }
         }
 
         return super.onOptionsItemSelected(item)
     }
 
+    private fun initHandler() {
+        if (HANDLER == null) {
+            HANDLER = QrHandler(this)
+        }
+    }
+
+    override fun onDestroy() {
+        HANDLER = null
+        super.onDestroy()
+    }
+
+
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == RESULT_OK) {
             if (requestCode == REQUEST_IMAGE) {
+                initHandler()
                 val path = FileUtils().getPathFromUri(this, data?.data)
-                val result = FileUtils.analyzeBitmap(path)
-                if (result == null) {
-                    scannerView.startCamera()
-                    return
-                }
-                handleResult(result)
+                Thread(Runnable {
+                    val msg = Message();
+                    val result = FileUtils.analyzeBitmap(path)
+                    if (result != null) {
+                        msg.what = PARSE_QR_OK
+                        val bundle = Bundle()
+                        bundle.putString("qrCode", result.toString())
+                        msg.data = bundle
+                        HANDLER?.sendMessage(msg)
+                    } else {
+                        msg.what = PARSE_QR_NONE
+                        HANDLER?.sendMessage(msg)
+                    }
+                }).start()
+                return
             }
         }
     }
@@ -123,6 +175,13 @@ class BarcodeScannerActivity : Activity(), ZXingScannerView.ResultHandler {
     override fun handleResult(result: Result?) {
         val intent = Intent()
         intent.putExtra("SCAN_RESULT", result.toString())
+        setResult(Activity.RESULT_OK, intent)
+        finish()
+    }
+
+    fun handleResult(result: String?) {
+        val intent = Intent()
+        intent.putExtra("SCAN_RESULT", result)
         setResult(Activity.RESULT_OK, intent)
         finish()
     }
