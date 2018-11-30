@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:barcode_scan/barcode_scan.dart';
 
 
-void main() => runApp(new MyApp());
+void main() => runApp(MaterialApp(
+  title: "Demo",
+  home: MyApp(),
+));
 
 class MyApp extends StatefulWidget {
   @override
@@ -27,6 +30,13 @@ class _MyAppState extends State<MyApp> {
           child: Icon(Icons.add),
           onPressed: () async {
             var res = await BarcodeScanner.scan();
+            showDialog(
+              context: context,
+              builder: (_) => AlertDialog(
+                title: Text('qrcode: $res'),
+              ),
+              barrierDismissible: true,
+            );
             print("[qrcode] $res");
           },
         ),
